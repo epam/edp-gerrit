@@ -43,9 +43,7 @@ if [ "$1" = "/gerrit-start.sh" ]; then
   fi
 
   # Install external plugins
-  # The importer plugin is not ready for 3.0.0 yet.
-  su-exec ${GERRIT_USER} cp -f ${GERRIT_HOME}/events-log.jar ${GERRIT_SITE}/plugins/events-log.jar
-  #su-exec ${GERRIT_USER} cp -f ${GERRIT_HOME}/importer.jar ${GERRIT_SITE}/plugins/importer.jar
+  su-exec ${GERRIT_USER} mv -f ${GERRIT_HOME}/*.jar ${GERRIT_SITE}/plugins/
 
   # Provide a way to customise this image
   echo
@@ -295,7 +293,7 @@ if [ "$1" = "/gerrit-start.sh" ]; then
 
   #Section container
   [ -z "${JAVA_HEAPLIMIT}" ] || set_gerrit_config container.heapLimit "${JAVA_HEAPLIMIT}"
-  [ -z "${JAVA_OPTIONS}" ]   || set_gerrit_config container.javaOptions "${JAVA_OPTIONS}"
+  [ -z "${JAVA_OPTIONS}" ]   || set_gerrit_config --add container.javaOptions "${JAVA_OPTIONS}"
   [ -z "${JAVA_SLAVE}" ]     || set_gerrit_config container.slave "${JAVA_SLAVE}"
 
   #Section sendemail
