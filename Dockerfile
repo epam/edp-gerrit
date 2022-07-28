@@ -6,7 +6,7 @@ LABEL maintainer="SupportEPMD-EDP@epam.com"
 ENV GERRIT_HOME /var/gerrit
 ENV GERRIT_SITE ${GERRIT_HOME}/review_site
 ENV GERRIT_WAR ${GERRIT_HOME}/gerrit.war
-ENV GERRIT_VERSION 3.6.1
+ENV GERRIT_VERSION 3.5.2
 ENV GERRIT_USER gerrit2
 ENV GERRIT_INIT_ARGS "--install-all-plugins"
 
@@ -29,7 +29,7 @@ RUN mkdir /docker-entrypoint-init.d && \
     curl -fSsL https://gerrit-releases.storage.googleapis.com/gerrit-${GERRIT_VERSION}.war -o ${GERRIT_WAR}
 
 #Download Plugins
-ENV PLUGIN_VERSION=3.6
+ENV PLUGIN_VERSION=3.5
 ENV GERRITFORGE_URL=https://gerrit-ci.gerritforge.com
 ENV GERRITFORGE_ARTIFACT_DIR=lastSuccessfulBuild/artifact/bazel-bin/plugins
 
