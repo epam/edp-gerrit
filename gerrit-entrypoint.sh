@@ -346,55 +346,44 @@ if [ "$1" = "/gerrit-start.sh" ]; then
   # docker --link is deprecated. All DB_* environment variables will be replaced by DATABASE_* below.
   [ ${#DATABASE_HOSTNAME} -gt 0 ] && [ ${#DATABASE_PORT} -gt 0 ] && wait_for_database ${DATABASE_HOSTNAME} ${DATABASE_PORT}
 
-  echo "Upgrading gerrit..."
-  su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" init --batch -d "${GERRIT_SITE}" ${GERRIT_INIT_ARGS}
-  if [ $? -eq 0 ]; then
-    GERRIT_VERSIONFILE="${GERRIT_SITE}/gerrit_version"
+  GERRIT_VERSIONFILE="${GERRIT_SITE}/gerrit_version"
 
-    # MIGRATE_TO_NOTEDB_OFFLINE will override IGNORE_VERSIONCHECK
-    if [ -n "${IGNORE_VERSIONCHECK}" ] && [ -z "${MIGRATE_TO_NOTEDB_OFFLINE}" ]; then
-      echo "Don't perform a version check and never do a full reindex"
-      NEED_REINDEX=0
-    else
-      # check whether its a good idea to do a full upgrade
-      NEED_REINDEX=1
-      echo "Checking version file ${GERRIT_VERSIONFILE}"
-      if [ -f "${GERRIT_VERSIONFILE}" ]; then
-        OLD_GERRIT_VER="V$(cat ${GERRIT_VERSIONFILE})"
-        GERRIT_VER="V${GERRIT_VERSION}"
-        echo " have old gerrit version ${OLD_GERRIT_VER}"
-        if [ "${OLD_GERRIT_VER}" = "${GERRIT_VER}" ]; then
-          echo " same gerrit version, no upgrade necessary ${OLD_GERRIT_VER} == ${GERRIT_VER}"
-          NEED_REINDEX=0
-        else
-          echo " gerrit version mismatch #${OLD_GERRIT_VER}# != #${GERRIT_VER}#"
-        fi
-      else
-        echo " gerrit version file does not exist, upgrade necessary"
-      fi
-    fi
-    if [ ${NEED_REINDEX} -eq 1 ]; then
-      if [ -n "${MIGRATE_TO_NOTEDB_OFFLINE}" ]; then
-        echo "Migrating changes from ReviewDB to NoteDB..."
-        su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" migrate-to-note-db -d "${GERRIT_SITE}"
-      else
-        echo "Run copy-approvals..."
-        su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" copy-approvals -d "${GERRIT_SITE}"
-        echo "Reindexing..."
-        su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
-      fi
-      if [ $? -eq 0 ]; then
-        echo "Upgrading is OK. Writing versionfile ${GERRIT_VERSIONFILE}"
-        su-exec ${GERRIT_USER} touch "${GERRIT_VERSIONFILE}"
-        su-exec ${GERRIT_USER} echo "${GERRIT_VERSION}" > "${GERRIT_VERSIONFILE}"
-        echo "${GERRIT_VERSIONFILE} written."
-      else
-        echo "Upgrading fail!"
-      fi
-    fi
+  if [ -n "${IGNORE_VERSIONCHECK}" ]; then
+    echo "Don't perform a version check and never do a full reindex"
+    NEED_REINDEX=0
   else
-    echo "Something wrong..."
-    cat "${GERRIT_SITE}/logs/error_log"
+    # check whether its a good idea to do a full upgrade
+    NEED_REINDEX=1
+    echo "Checking version file ${GERRIT_VERSIONFILE}"
+    if [ -f "${GERRIT_VERSIONFILE}" ]; then
+      OLD_GERRIT_VER="V$(cat ${GERRIT_VERSIONFILE})"
+      GERRIT_VER="V${GERRIT_VERSION}"
+      echo " have old gerrit version ${OLD_GERRIT_VER}"
+      if [ "${OLD_GERRIT_VER}" = "${GERRIT_VER}" ]; then
+        echo " same gerrit version, no upgrade necessary ${OLD_GERRIT_VER} == ${GERRIT_VER}"
+        NEED_REINDEX=0
+      else
+        echo " gerrit version mismatch #${OLD_GERRIT_VER}# != #${GERRIT_VER}#"
+      fi
+    else
+      echo " gerrit version file does not exist, upgrade necessary"
+    fi
+  fi
+  if [ ${NEED_REINDEX} -eq 1 ]; then
+      echo "Run copy-approvals..."
+      su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" copy-approvals -d "${GERRIT_SITE}"
+      echo "Run init..."
+      su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" init --batch -d "${GERRIT_SITE}" ${GERRIT_INIT_ARGS}
+      echo "Reindexing..."
+      su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
+    if [ $? -eq 0 ]; then
+      echo "Upgrading is OK. Writing versionfile ${GERRIT_VERSIONFILE}"
+      su-exec ${GERRIT_USER} touch "${GERRIT_VERSIONFILE}"
+      su-exec ${GERRIT_USER} echo "${GERRIT_VERSION}" > "${GERRIT_VERSIONFILE}"
+      echo "${GERRIT_VERSIONFILE} written."
+    else
+      echo "Upgrading fail!"
+    fi
   fi
 fi
 exec "$@"
