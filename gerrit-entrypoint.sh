@@ -23,6 +23,8 @@ wait_for_database() {
   sleep 1
 }
 
+version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
+
 if [ -n "${JAVA_HEAPLIMIT}" ]; then
   JAVA_MEM_OPTIONS="-Xmx${JAVA_HEAPLIMIT}"
 fi
@@ -346,53 +348,50 @@ if [ "$1" = "/gerrit-start.sh" ]; then
   # docker --link is deprecated. All DB_* environment variables will be replaced by DATABASE_* below.
   [ ${#DATABASE_HOSTNAME} -gt 0 ] && [ ${#DATABASE_PORT} -gt 0 ] && wait_for_database ${DATABASE_HOSTNAME} ${DATABASE_PORT}
 
-  echo "Upgrading gerrit..."
-  su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" init --batch -d "${GERRIT_SITE}" ${GERRIT_INIT_ARGS}
-  if [ $? -eq 0 ]; then
-    GERRIT_VERSIONFILE="${GERRIT_SITE}/gerrit_version"
 
-    # MIGRATE_TO_NOTEDB_OFFLINE will override IGNORE_VERSIONCHECK
-    if [ -n "${IGNORE_VERSIONCHECK}" ] && [ -z "${MIGRATE_TO_NOTEDB_OFFLINE}" ]; then
-      echo "Don't perform a version check and never do a full reindex"
-      NEED_REINDEX=0
-    else
-      # check whether its a good idea to do a full upgrade
-      NEED_REINDEX=1
-      echo "Checking version file ${GERRIT_VERSIONFILE}"
-      if [ -f "${GERRIT_VERSIONFILE}" ]; then
-        OLD_GERRIT_VER="V$(cat ${GERRIT_VERSIONFILE})"
-        GERRIT_VER="V${GERRIT_VERSION}"
-        echo " have old gerrit version ${OLD_GERRIT_VER}"
-        if [ "${OLD_GERRIT_VER}" = "${GERRIT_VER}" ]; then
-          echo " same gerrit version, no upgrade necessary ${OLD_GERRIT_VER} == ${GERRIT_VER}"
-          NEED_REINDEX=0
-        else
-          echo " gerrit version mismatch #${OLD_GERRIT_VER}# != #${GERRIT_VER}#"
-        fi
-      else
-        echo " gerrit version file does not exist, upgrade necessary"
-      fi
-    fi
-    if [ ${NEED_REINDEX} -eq 1 ]; then
-      if [ -n "${MIGRATE_TO_NOTEDB_OFFLINE}" ]; then
-        echo "Migrating changes from ReviewDB to NoteDB..."
-        su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" migrate-to-note-db -d "${GERRIT_SITE}"
-      else
-        echo "Reindexing..."
-        su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
-      fi
-      if [ $? -eq 0 ]; then
-        echo "Upgrading is OK. Writing versionfile ${GERRIT_VERSIONFILE}"
-        su-exec ${GERRIT_USER} touch "${GERRIT_VERSIONFILE}"
-        su-exec ${GERRIT_USER} echo "${GERRIT_VERSION}" > "${GERRIT_VERSIONFILE}"
-        echo "${GERRIT_VERSIONFILE} written."
-      else
-        echo "Upgrading fail!"
-      fi
-    fi
+
+  GERRIT_VERSIONFILE="${GERRIT_SITE}/gerrit_version"
+
+  if [ -n "${IGNORE_VERSIONCHECK}" ]; then
+    echo "Don't perform a version check and never do a full reindex"
+    NEED_REINDEX=0
   else
-    echo "Something wrong..."
-    cat "${GERRIT_SITE}/logs/error_log"
+    # check whether its a good idea to do a full upgrade
+    NEED_REINDEX=1
+    echo "Checking version file ${GERRIT_VERSIONFILE}"
+    if [ -f "${GERRIT_VERSIONFILE}" ]; then
+      OLD_GERRIT_VER="V$(cat ${GERRIT_VERSIONFILE})"
+      GERRIT_VER="V${GERRIT_VERSION}"
+      echo " have old gerrit version ${OLD_GERRIT_VER}"
+      if [ "${OLD_GERRIT_VER}" = "${GERRIT_VER}" ]; then
+        echo " same gerrit version, no upgrade necessary ${OLD_GERRIT_VER} == ${GERRIT_VER}"
+        NEED_REINDEX=0
+      else
+        echo " gerrit version mismatch #${OLD_GERRIT_VER}# != #${GERRIT_VER}#. Upgrade is required"
+        if version_lt ${OLD_GERRIT_VER} "V3.5.2"; then
+          echo "Current gerrit version #${OLD_GERRIT_VER}# is less than 3.5.2. Please upgrade to 3.5.2 first"
+          exit 1
+        fi
+      fi
+    else
+      echo " gerrit version file does not exist, trying to upgrade..."
+    fi
+  fi
+
+  echo "Running gerrit init..."
+  su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" init --batch -d "${GERRIT_SITE}" ${GERRIT_INIT_ARGS}
+
+  if [ ${NEED_REINDEX} -eq 1 ]; then
+      echo "Reindexing..."
+      su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
+    if [ $? -eq 0 ]; then
+      echo "Upgrading is OK. Writing versionfile ${GERRIT_VERSIONFILE}"
+      su-exec ${GERRIT_USER} touch "${GERRIT_VERSIONFILE}"
+      su-exec ${GERRIT_USER} echo "${GERRIT_VERSION}" > "${GERRIT_VERSIONFILE}"
+      echo "${GERRIT_VERSIONFILE} written."
+    else
+      echo "Upgrading fail!"
+    fi
   fi
 fi
 exec "$@"
