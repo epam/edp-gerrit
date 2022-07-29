@@ -44,9 +44,6 @@ if [ "$1" = "/gerrit-start.sh" ]; then
     [ ${#DATABASE_TYPE} -gt 0 ] && rm -rf "${GERRIT_SITE}/git"
   fi
 
-  # Install external plugins
-  su-exec ${GERRIT_USER} cp -f ${GERRIT_HOME}/*.jar ${GERRIT_SITE}/plugins/
-
   # Provide a way to customise this image
   echo
   for f in /docker-entrypoint-init.d/*; do
@@ -378,12 +375,15 @@ if [ "$1" = "/gerrit-start.sh" ]; then
     fi
   fi
 
+  # Install external plugins
+  su-exec ${GERRIT_USER} cp -f ${GERRIT_HOME}/*.jar ${GERRIT_SITE}/plugins/
+
   echo "Running gerrit init..."
   su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" init --batch -d "${GERRIT_SITE}" ${GERRIT_INIT_ARGS}
 
   if [ ${NEED_REINDEX} -eq 1 ]; then
-      echo "Reindexing..."
-      su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
+    echo "Reindexing..."
+    su-exec ${GERRIT_USER} java ${JAVA_OPTIONS} ${JAVA_MEM_OPTIONS} -jar "${GERRIT_WAR}" reindex --verbose -d "${GERRIT_SITE}"
     if [ $? -eq 0 ]; then
       echo "Upgrading is OK. Writing versionfile ${GERRIT_VERSIONFILE}"
       su-exec ${GERRIT_USER} touch "${GERRIT_VERSIONFILE}"
