@@ -1,59 +1,41 @@
-# Gerrit Docker image
+# EDP Gerrit Docker Image
 
-[![Docker Stars](https://img.shields.io/docker/stars/openfrontier/gerrit.svg)](https://hub.docker.com/r/openfrontier/gerrit/)
-[![Docker Pulls](https://img.shields.io/docker/pulls/openfrontier/gerrit.svg)](https://hub.docker.com/r/openfrontier/gerrit/)
-[![Docker Automated build](https://img.shields.io/docker/automated/openfrontier/gerrit.svg)](https://hub.docker.com/r/openfrontier/gerrit/)
+Based on the [Open Frontier Gerrit Docker Image](https://github.com/openfrontier/docker-gerrit) project.
 
- The Gerrit code review system with external database and OpenLDAP integration.
- This image is based on the openjdk:jre-alpine or the openjdk:jre-slim which makes this image small and fast.
+The maintenance of Gerrit as an EDP component will be conducted in this repository. 
+
+EDP Gerrit Docker Image is a Gerrit code review system with an external database integrated with OpenLDAP. This image is small and fast because it is based on the `openjdk:jre-alpine` or the `openjdk:jre-slim` Docker official images.
 
 ## Branches and Tags
 
  The `latest` is not production ready because new features will be tested on it first.
- The branch tags like `2.14.x` or `2.15.x` are used to track the releases of Gerrit. Approved new features will be merged to these branches first then included in the next [release](https://github.com/openfrontier/docker-gerrit/releases).
-
-#### Alpine base
-
- * openfrontier/gerrit:latest -> 3.3.2
- * openfrontier/gerrit:3.2.x -> 3.2.7
- * openfrontier/gerrit:3.1.x -> 3.1.12
- * openfrontier/gerrit:3.0.x  -> 3.0.15
- * openfrontier/gerrit:2.16.x -> 2.16.26
- * openfrontier/gerrit:2.15.x -> 2.15.18
- * openfrontier/gerrit:2.14.x -> 2.14.20
- * openfrontier/gerrit:2.13.x -> 2.13.14
- * openfrontier/gerrit:2.12.x -> 2.12.7
- * openfrontier/gerrit:2.11.x -> 2.11.10
- * openfrontier/gerrit:2.10.x -> 2.10.6
-
-#### Debian base
-
- * openfrontier/gerrit:2.15.x-slim -> 2.15.18
- * openfrontier/gerrit:2.14.x-slim -> 2.14.20
+ The branch tags like `2.14.x` or `2.15.x` are used to track the releases of Gerrit. Approved new features will be merged to these branches first then included in the next [release](https://github.com/epam/edp-gerrit/releases).
 
 ## Container Quickstart
 
-  1. Initialize and start gerrit.
+To start the container, follow the steps below:
 
-    docker run -d -p 8080:8080 -p 29418:29418 openfrontier/gerrit
+  1. Run the following command to initialize and start Gerrit:
 
-  2. Open your browser to http://<docker host url>:8080
+    docker run -d -p 8080:8080 -p 29418:29418 epamedp/edp-gerrit
 
-## Use HTTP authentication type
+  2. Open your browser to `http://<docker host url>:8080`.
 
-    docker run -d -p 8080:8080 -p 29418:29418 -e AUTH_TYPE=HTTP openfrontier/gerrit
+## Use HTTP Authentication Type
 
-## Use another container as the gerrit site storage.
+    docker run -d -p 8080:8080 -p 29418:29418 -e AUTH_TYPE=HTTP epamedp/edp-gerrit
+
+## Use Another Container as Gerrit Site Storage
 
   1. Create a volume container.
 
-    docker run --name gerrit_volume openfrontier/gerrit echo "Gerrit volume container."
+    docker run --name gerrit_volume epamedp/edp-gerrit echo "Gerrit volume container."
 
   2. Initialize and start gerrit using volume created above.
 
-    docker run -d --volumes-from gerrit_volume -p 8080:8080 -p 29418:29418 openfrontier/gerrit
+    docker run -d --volumes-from gerrit_volume -p 8080:8080 -p 29418:29418 epamedp/edp-gerrit
 
-## Use a docker named volume as the gerrit site storage.
+## Use Docker Named Volume as Gerrit Site Storage
   **DO NOT** use host volumes in particular directories under the home directory like `~/gerrit` as a gerrit volume!!! Use [named volume](https://success.docker.com/article/different-types-of-volumes) instead!!!
 
   1. Create a docker volume for the gerrit site.
@@ -62,16 +44,17 @@
 
   2. Initialize and start gerrit using the local directory created above.
 
-    docker run -d -v gerrit_volume:/var/gerrit/review_site -p 8080:8080 -p 29418:29418 openfrontier/gerrit
+    docker run -d -v gerrit_volume:/var/gerrit/review_site -p 8080:8080 -p 29418:29418 epamedp/edp-gerrit
 
-## Install plugins on start up.
+## Install Plugins on Start Up
 
   When calling gerrit init --batch, it is possible to list plugins to be installed with --install-plugin=<plugin_name>. This can be done using the GERRIT_INIT_ARGS environment variable. See [Gerrit Documentation](https://gerrit-review.googlesource.com/Documentation/pgm-init.html) for more information.
 
     #Install download-commands plugin on start up
-    docker run -d -p 8080:8080 -p 29418:29418 -e GERRIT_INIT_ARGS='--install-plugin=download-commands' openfrontier/gerrit
+    docker run -d -p 8080:8080 -p 29418:29418 -e GERRIT_INIT_ARGS='--install-plugin=download-commands'
+    epamedp/edp-gerrit
 
-## Extend this image.
+## Extend This Image
 
   Similarly to the [Postgres](https://hub.docker.com/_/postgres/) image, if you would like to do additional configuration mid-script, add one or more
   `*.sh` or `*.nohup` scripts under `/docker-entrypoint-init.d`. This directory is created by default. Scripts in `/docker-entrypoint-init.d` are run after
@@ -81,7 +64,7 @@
   You can also extend the image with a simple `Dockerfile`. The following example will add some scripts to initialize the container on start up.
 
   ```dockerfile
-  FROM openfrontier/gerrit:latest
+  FROM epamedp/edp-gerrit:latest
 
   COPY gerrit-create-user.sh /docker-entrypoint-init.d/gerrit-create-user.sh
   COPY gerrit-upload-ssh-key.sh /docker-entrypoint-init.d/gerrit-upload-ssh-key.sh
@@ -89,7 +72,7 @@
   RUN chmod +x /docker-entrypoint-init.d/*.sh /docker-entrypoint-init.d/*.nohup
   ```
 
-## Run dockerized gerrit with external database and OpenLDAP.
+## Run Dockerized Gerrit With External Database and OpenLDAP
 
 ##### All attributes in [gerrit.config database section](https://gerrit-review.googlesource.com/Documentation/config-gerrit.html#database) are supported.
 
@@ -111,10 +94,10 @@
     -e AUTH_TYPE=LDAP \
     -e LDAP_SERVER=ldap://ldap.server.address \
     -e LDAP_ACCOUNTBASE=<ldap-basedn> \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Run dockerized gerrit with dockerized PostgreSQL and OpenLDAP.
+## Run Dockerized Gerrit With Dockerized PostgreSQL and OpenLDAP
 
 #### Note: docker --link is deprecated and this way might be unsupported in the future release.
 
@@ -138,10 +121,10 @@
     -e AUTH_TYPE=LDAP \
     -e LDAP_SERVER=ldap://ldap.server.address \
     -e LDAP_ACCOUNTBASE=<ldap-basedn> \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Setup sendemail options.
+## Setup Sendemail Options
 
 ##### Some basic attributes in [gerrit.config sendmail section](https://gerrit-review.googlesource.com/Documentation/config-gerrit.html#sendemail) are supported.
 
@@ -161,10 +144,10 @@
     -e SMTP_PASS=<smtp password> \
     -e SMTP_CONNECT_TIMEOUT=10sec \
     -e SMTP_FROM=USER \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Setup user options
+## Setup User Options
 
 ##### All attributes in [gerrit.config user section](https://gerrit-review.googlesource.com/Documentation/config-gerrit.html#user) are supported.
 
@@ -178,10 +161,10 @@
     -e WEBURL=http://your.site.domain:8080 \
     -e USER_NAME=gerrit \
     -e USER_EMAIL=gerrit@your.site.domain \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Setup OAUTH options
+## Setup OAUTH Options
 
   ```shell
     docker run \
@@ -210,9 +193,9 @@
     -e OAUTH_BITBUCKET_CLIENT_ID=abcdefg \
     -e OAUTH_BITBUCKET_CLIENT_SECRET=secret123 \
     -e OAUTH_BITBUCKET_FIX_LEGACY_USER_ID=true \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
-## Setup Replication to multiple remotes
+## Setup Replication to Multiple Remotes
 
   ```shell
     docker run \
@@ -240,10 +223,10 @@
     -e BITBUCKET_CREATE_MISSING_REPOSITORIES=false \
     -e GITHUB_URL=https://${GH_USER}@github.com/${GH_ORG}/${name}.git \
     -e GITHUB_PASSWORD=${GH_PASSWORD} \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Using gitiles instead of gitweb
+## Using Gitiles Instead of Gitweb
 
   ```shell
     docker run \
@@ -251,10 +234,10 @@
     -p 8080:8080 \
     -p 29418:29418 \
     -e GITWEB_TYPE=gitiles \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Restricting download schemes
+## Restricting Download Schemes
 
   ```shell
     docker run \
@@ -262,10 +245,10 @@
     -p 8080:8080 \
     -p 29418:29418 \
     -e DOWNLOAD_SCHEMES=http ssh \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Setup DEVELOPMENT_BECOME_ANY_ACCOUNT option
+## Setup DEVELOPMENT_BECOME_ANY_ACCOUNT Option
 
 **DO NOT USE.** Only for use in a development environment.
 When this is the configured authentication method a hyperlink titled "Become" appears in the top right corner of the page, taking the user to a form where they can enter the username of any existing user account, and immediately login as that account, without any authentication taking place. This form of authentication is only useful for the GWT hosted mode shell, where OpenID authentication redirects might be risky to the developer's host computer, and HTTP authentication is not possible.
@@ -276,10 +259,10 @@ When this is the configured authentication method a hyperlink titled "Become" ap
     -p 8080:8080 \
     -p 29418:29418 \
     -e AUTH_TYPE=DEVELOPMENT_BECOME_ANY_ACCOUNT \
-    -d openfrontier/gerrit
+    -d epamedp/edp-gerrit
   ```
 
-## Override the default startup action
+## Override the Default Startup Action
 
 Gerrit is launched using the `daemon` action of its init script.  This
 brings the server up without forking and sends error log messages to the
@@ -297,33 +280,26 @@ started with `supervise` as follows:
         -v ~/gerrit_volume:/var/gerrit/review_site \
         -p 8080:8080 \
         -p 29418:29418 \
-        -d openfrontier/gerrit
+        -d epamedp/edp-gerrit
   ```
 
 **NOTE:** Not all init actions make sense for starting Gerrit in a Docker
 container.  Specifically, invoking Gerrit with `start` forks the server
 before returning which will cause the container to exit soon after.
 
-## Sample operational scripts
+## Sync Timezone With the Host Server
 
-   An example to demonstrate how to extend this Gerrit image to integrate with Jenkins are located in the [openfrontier/gerrit-ci](https://hub.docker.com/r/openfrontier/gerrit-ci/) .
+Run the following command, to sync timezone with the host server:
 
-   A Jenkins docker image with some sample scripts to integrate with this Gerrit image can be pulled from [openfrontier/jenkins](https://hub.docker.com/r/openfrontier/jenkins/).
+    docker run -d -p 8080:8080 -p 29418:29418 -v /etc/localtime:/etc/localtime:ro epamedp/edp-gerrit
 
-   There's an [upper project](https://github.com/openfrontier/ci) which privdes sample scripts about how to use this image and a [Jenkins image](https://hub.docker.com/r/openfrontier/jenkins/) to create a Gerrit-Jenkins integration environment. And there's a [compose project](https://github.com/openfrontier/ci-compose) to demonstrate how to utilize docker compose to accomplish the same thing.
+## Automatic Reindex Detection
 
-## Sync timezone with the host server.
-
-    docker run -d -p 8080:8080 -p 29418:29418 -v /etc/localtime:/etc/localtime:ro openfrontier/gerrit
-
-## Automatic reindex detection
-
-  The docker container automatically writes the current gerrit version into `${GERRIT_HOME}/review_site/gerrit_version`
-  in order to detect whether a full upgrade should be performed.
+  The docker container automatically writes the current gerrit version into `${GERRIT_HOME}/review_site/gerrit_version`, in order to detect whether a full upgrade should be performed.
   This check can be disabled via the `IGNORE_VERSIONCHECK` environment variable.
 
-  Note that for major version upgrades a full reindex might be necessary. Check the gerrit upgrade notes for details.
-  For large repositories, the full reindex can take 30min or more.
+  Note that for major version upgrades a full reindex might be necessary. Check the Gerrit upgrade notes for details.
+  For large repositories, the full reindex can take 30 min or more.
 
   ```shell
     docker run \
@@ -331,5 +307,5 @@ before returning which will cause the container to exit soon after.
         -v ~/gerrit_volume:/var/gerrit/review_site \
         -p 8080:8080 \
         -p 29418:29418 \
-        -d openfrontier/gerrit
+        -d epamedp/edp-gerrit
   ```
