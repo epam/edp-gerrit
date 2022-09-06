@@ -16,7 +16,7 @@ RUN adduser -D -h "${GERRIT_HOME}" -g "Gerrit User" -s /sbin/nologin "${GERRIT_U
 RUN set -x \
     && apk add --update --no-cache \
         bash=5.1.16-r0 \
-        curl=7.79.1-r2 \
+        curl=7.79.1-r3 \
         git-gitweb=2.32.3-r0 \
         git=2.32.3-r0 \
         openssh-client=8.6_p1-r3 \

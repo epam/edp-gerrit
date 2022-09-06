@@ -324,6 +324,14 @@ if [ "$1" = "/gerrit-start.sh" ]; then
   #Section plugin events-log
   set_gerrit_config plugin.events-log.storeUrl ${GERRIT_EVENTS_LOG_STOREURL:-"jdbc:h2:${GERRIT_SITE}/db/ChangeEvents"}
 
+  #Section plugin webhooks
+  set_gerrit_config plugin.webhooks.connectionTimeout 3000
+  set_gerrit_config plugin.webhooks.socketTimeout 2500
+  # It is mandatory to set 1 for tekton EventListener
+  set_gerrit_config plugin.webhooks.maxTries 1
+  set_gerrit_config plugin.webhooks.retryInterval 5000
+  set_gerrit_config plugin.webhooks.threadPoolSize 3
+
   #Section httpd
   [ -z "${HTTPD_LISTENURL}" ] || set_gerrit_config httpd.listenUrl "${HTTPD_LISTENURL}"
 
