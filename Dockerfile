@@ -17,10 +17,10 @@ RUN set -x \
     && apk add --update --no-cache \
         bash=5.1.16-r0 \
         curl=7.79.1-r3 \
-        git-gitweb=2.32.3-r0 \
-        git=2.32.3-r0 \
+        git-gitweb=2.32.4-r0 \
+        git=2.32.4-r0 \
         openssh-client=8.6_p1-r3 \
-        openssl=1.1.1q-r0 \
+        openssl=1.1.1s-r0 \
         perl-cgi=4.51-r0 \
         perl=5.32.1-r0 \
         su-exec=0.2-r1
@@ -33,10 +33,13 @@ ENV PLUGIN_VERSION=3.6
 ENV GERRITFORGE_URL=https://gerrit-ci.gerritforge.com
 ENV GERRITFORGE_ARTIFACT_DIR=lastSuccessfulBuild/artifact/bazel-bin/plugins
 
-RUN for plugin in events-log oauth metrics-reporter-prometheus serviceuser; do \
+RUN for plugin in events-log oauth metrics-reporter-prometheus; do \
         curl -fSsL "${GERRITFORGE_URL}/job/plugin-${plugin}-bazel-master-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/${plugin}/${plugin}.jar" \
         -o "${GERRIT_HOME}/${plugin}.jar"; \
-    done
+    done \
+    # serviceuser plugin has custom path
+    && curl -fSsL "${GERRITFORGE_URL}/job/plugin-serviceuser-bazel-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/serviceuser/serviceuser.jar" \
+    -o "${GERRIT_HOME}/serviceuser.jar";
 
 # Ensure the entrypoint scripts are in a fixed location
 COPY gerrit-entrypoint.sh /
