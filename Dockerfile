@@ -29,17 +29,14 @@ RUN mkdir /docker-entrypoint-init.d && \
     curl -fSsL https://gerrit-releases.storage.googleapis.com/gerrit-${GERRIT_VERSION}.war -o ${GERRIT_WAR}
 
 #Download Plugins
-ENV PLUGIN_VERSION=3.6
+ENV PLUGIN_VERSION=3.7
 ENV GERRITFORGE_URL=https://gerrit-ci.gerritforge.com
 ENV GERRITFORGE_ARTIFACT_DIR=lastSuccessfulBuild/artifact/bazel-bin/plugins
 
-RUN for plugin in events-log oauth metrics-reporter-prometheus; do \
+RUN for plugin in events-log oauth metrics-reporter-prometheus serviceuser; do \
         curl -fSsL "${GERRITFORGE_URL}/job/plugin-${plugin}-bazel-master-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/${plugin}/${plugin}.jar" \
         -o "${GERRIT_HOME}/${plugin}.jar"; \
-    done \
-    # serviceuser plugin has custom path
-    && curl -fSsL "${GERRITFORGE_URL}/job/plugin-serviceuser-bazel-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/serviceuser/serviceuser.jar" \
-    -o "${GERRIT_HOME}/serviceuser.jar";
+    done
 
 # Ensure the entrypoint scripts are in a fixed location
 COPY gerrit-entrypoint.sh /
