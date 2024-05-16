@@ -6,7 +6,7 @@ LABEL maintainer="SupportEPMD-EDP@epam.com"
 ENV GERRIT_HOME /var/gerrit
 ENV GERRIT_SITE ${GERRIT_HOME}/review_site
 ENV GERRIT_WAR ${GERRIT_HOME}/gerrit.war
-ENV GERRIT_VERSION 3.6.2
+ENV GERRIT_VERSION 3.7.9
 ENV GERRIT_USER gerrit2
 ENV GERRIT_INIT_ARGS "--install-all-plugins"
 
@@ -16,11 +16,11 @@ RUN adduser -D -h "${GERRIT_HOME}" -g "Gerrit User" -s /sbin/nologin "${GERRIT_U
 RUN set -x \
     && apk add --update --no-cache \
         bash=5.1.16-r0 \
-        curl=7.79.1-r4 \
-        git-gitweb=2.32.5-r0 \
-        git=2.32.5-r0 \
+        curl=8.0.1-r0 \
+        git-gitweb=2.32.7-r0 \
+        git=2.32.7-r0 \
         openssh-client=8.6_p1-r3 \
-        openssl=1.1.1s-r0 \
+        openssl=1.1.1t-r2 \
         perl-cgi=4.51-r0 \
         perl=5.32.1-r0 \
         su-exec=0.2-r1
@@ -29,17 +29,14 @@ RUN mkdir /docker-entrypoint-init.d && \
     curl -fSsL https://gerrit-releases.storage.googleapis.com/gerrit-${GERRIT_VERSION}.war -o ${GERRIT_WAR}
 
 #Download Plugins
-ENV PLUGIN_VERSION=3.6
+ENV PLUGIN_VERSION=3.7
 ENV GERRITFORGE_URL=https://gerrit-ci.gerritforge.com
 ENV GERRITFORGE_ARTIFACT_DIR=lastSuccessfulBuild/artifact/bazel-bin/plugins
 
 RUN for plugin in events-log oauth metrics-reporter-prometheus; do \
         curl -fSsL "${GERRITFORGE_URL}/job/plugin-${plugin}-bazel-master-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/${plugin}/${plugin}.jar" \
         -o "${GERRIT_HOME}/${plugin}.jar"; \
-    done \
-    # serviceuser plugin has custom path
-    && curl -fSsL "${GERRITFORGE_URL}/job/plugin-serviceuser-bazel-stable-${PLUGIN_VERSION}/${GERRITFORGE_ARTIFACT_DIR}/serviceuser/serviceuser.jar" \
-    -o "${GERRIT_HOME}/serviceuser.jar";
+    done
 
 # Ensure the entrypoint scripts are in a fixed location
 COPY gerrit-entrypoint.sh /
